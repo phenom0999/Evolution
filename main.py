@@ -1,6 +1,7 @@
 from creature import Creature, WIDTH, HEIGHT, GENE_SIZE, TARGET, dt
 import random
 import pygame
+from obstacle import Obstacle
 
 
 # Initialize Pygame
@@ -9,11 +10,11 @@ pygame.init()
 pygame.display.set_caption("Genetic Algorithm")
 
 
-populationSize = 500
+populationSize = 5000
 
 population = [Creature() for _ in range(populationSize)]  # Fixed initialization
 
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -22,14 +23,17 @@ BROWN = (150, 150, 150)
 font = pygame.font.Font(None, 30)
 
 
-bestCreature = None
+bestCreature = population[0] 
 bestFitness = 0
 elitism = True
 
 count = 0
 generation = 0
 n_success_creatures = 0
-max_success = 0
+max_success_rate = 0
+
+total_fitness = 0
+mating_pool_size = populationSize * 100
 
 gene_idx = 0
 
@@ -41,14 +45,15 @@ FPS = 30
 df = int(FPS * dt) # Frames for new gene to be activated
 
 
-obstacle_width = 350
-obstacle_height = 20
-obstacle_x = WIDTH/2
-obstacle_y = HEIGHT/2
-OBSTACLE = pygame.math.Vector2(obstacle_x, obstacle_y)
-
 target_width = 60
 target_height = 40
+
+# create two obstacles
+obs1 = Obstacle(WIDTH - 200, HEIGHT/4, 400, 20)
+obs2 = Obstacle(250, HEIGHT/2, 500, 20)
+obs3 = Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 500, 20)
+
+show_best_creature = False
 
 
 running = True
@@ -59,6 +64,13 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:  # Close button clicked
             running = False
+        
+    # Check if SPACE key is held down
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_SPACE]:
+        show_best_creature = True
+    else:
+        show_best_creature = False
 
     # activate next gene
     if count % df == 0:
@@ -71,9 +83,17 @@ while running:
 
         # create mating pool
         mating_pool = []
+
         for creature in population:
-            fitness = creature.fitness()
-            n = [creature] * (int(fitness * 100))
+            fitness = creature.fitness(count)
+            total_fitness += fitness
+
+        mating_pool_rate = mating_pool_size / total_fitness
+        print(mating_pool_rate, total_fitness)
+
+        for creature in population:
+            fitness = creature.fitness(count)
+            n = [creature] * max(1, (int(fitness * mating_pool_rate)))
             mating_pool += n
 
             # also update the bestFitness
@@ -95,7 +115,7 @@ while running:
 
         population = new_population[:populationSize]
 
-        max_success = max(max_success, n_success_creatures) # update max successful creature count
+        max_success_rate = max(max_success_rate, int((n_success_creatures / populationSize) * 100)) # update max successful creature count
 
         # reset count
         count = 0
@@ -109,12 +129,11 @@ while running:
     rect_target = pygame.Rect(0, 0, target_width, target_height)
     rect_target.center = TARGET  # Set center directly
 
-    # Draw obstacle
-    rect_obs = pygame.Rect(0, 0, obstacle_width, obstacle_height)
-    rect_obs.center = OBSTACLE
-
+    # Draw obstacles
+    obs1.draw(screen, BROWN)
+    obs2.draw(screen, BROWN)
+    obs3.draw(screen, BROWN)
     pygame.draw.rect(screen, YELLOW, rect_target)
-    pygame.draw.rect(screen, BROWN, rect_obs)
 
     
     for creature in population:
@@ -122,11 +141,13 @@ while running:
             creature.color = (150, 0, 0)
         else:
             creature.get_color()
-        pygame.draw.circle(screen, creature.color, creature.position, 10)
+
+        if not show_best_creature or creature == bestCreature:
+                pygame.draw.circle(screen, creature.color, creature.position, 10)
+
 
         # Check to see if the creature has collided with the obstacle
-        if (obstacle_x - obstacle_width/2 <= creature.position.x <= obstacle_x + obstacle_width/2 and
-    obstacle_y - obstacle_height/2 <= creature.position.y <= obstacle_y + obstacle_height/2):
+        if obs1.check_collision(creature) or obs2.check_collision(creature) or obs3.check_collision(creature):
             creature.stop = True
         # Check to see if the creature has reached the target
         elif (WIDTH/2 - target_width/2 <= creature.position.x <= WIDTH/2 + target_width/2 and
@@ -148,10 +169,11 @@ while running:
     text_rect = gen_text.get_rect(center=(50, 40))
     screen.blit(gen_text, text_rect)  # Draw text
 
-    success_text = font.render(f"N Success: {max_success}", True, WHITE)
+    success_text = font.render(f"Max success rate: {max_success_rate}%", True, WHITE)
     text_rect = gen_text.get_rect(center=(50, 80))
     screen.blit(success_text, text_rect)  # Draw text
     pygame.display.update()  # Update the screen
+
 
 
     # Limit frame rate

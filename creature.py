@@ -15,7 +15,7 @@ dt = 0.25 # Time for new gene to be activated
 
 GENE_SIZE = int(t / dt) + 1
 
-speed = 10
+speed = 15
 
 class Creature:
     def __init__(self):
@@ -25,6 +25,7 @@ class Creature:
         self.stop = False
         self.color = (0,0,0)
         self.target_reached = False
+        self.target_reached_idx = GENE_SIZE
 
     def get_color(self):
         # color
@@ -36,16 +37,17 @@ class Creature:
                 
         green = np.interp(geneX, [-30, 30], [0,200])
         blue = np.interp(geneY, [-30, 30], [200,0])
-        self.color = (0, green, blue, 50)
+        self.color = (0, green, blue, 255)
     
-    def fitness(self):
+    def fitness(self, idx):
         distance = self.position.distance_to(TARGET)
         fitness_value = np.interp(distance, [0,WIDTH], [1,0])
         if self.target_reached:
-            fitness_value = 1.5
+            speed_fitness = np.interp(idx, [0, GENE_SIZE * 30], [1, 0.25])
+            fitness_value = 20 * speed_fitness
         elif self.stop:
             fitness_value *= 0
-        return fitness_value * fitness_value
+        return fitness_value ** 5
     
     def crossover(self, partner):
         child = Creature()
