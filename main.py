@@ -10,7 +10,7 @@ pygame.init()
 pygame.display.set_caption("Genetic Algorithm")
 
 
-populationSize = 5000
+populationSize = 10000
 
 population = [Creature() for _ in range(populationSize)]  # Fixed initialization
 
@@ -89,11 +89,11 @@ while running:
             total_fitness += fitness
 
         mating_pool_rate = mating_pool_size / total_fitness
-        print(mating_pool_rate, total_fitness)
+        print(mating_pool_rate, total_fitness, bestFitness)
 
         for creature in population:
             fitness = creature.fitness(count)
-            n = [creature] * max(1, (int(fitness * mating_pool_rate)))
+            n = [creature] * (int(fitness * mating_pool_rate))
             mating_pool += n
 
             # also update the bestFitness
@@ -121,6 +121,7 @@ while running:
         count = 0
         gene_idx = 0
         n_success_creatures = 0
+        total_fitness = 0
         generation += 1
         
         continue
