@@ -15,7 +15,7 @@ dt = 0.25 # Time for new gene to be activated
 
 GENE_SIZE = int(t / dt) + 1
 
-speed = 5
+speed = 10
 
 class Creature:
     def __init__(self):
@@ -24,6 +24,7 @@ class Creature:
         self.currentVelocity = pygame.math.Vector2(0, 0)
         self.stop = False
         self.color = (0,0,0)
+        self.target_reached = False
 
     def get_color(self):
         # color
@@ -33,14 +34,16 @@ class Creature:
             geneX += gene.x
             geneY += gene.y
                 
-        green = np.interp(geneX, [-30, 30], [0,255])
-        blue = np.interp(geneY, [-30, 30], [255,0])
+        green = np.interp(geneX, [-30, 30], [0,200])
+        blue = np.interp(geneY, [-30, 30], [200,0])
         self.color = (0, green, blue, 50)
     
     def fitness(self):
         distance = self.position.distance_to(TARGET)
         fitness_value = np.interp(distance, [0,WIDTH], [1,0])
-        if self.stop:
+        if self.target_reached:
+            fitness_value = 1.5
+        elif self.stop:
             fitness_value *= 0
         return fitness_value * fitness_value
     
