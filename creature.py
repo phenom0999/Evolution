@@ -39,15 +39,15 @@ class Creature:
         blue = np.interp(geneY, [-30, 30], [200,0])
         self.color = (0, green, blue, 255)
     
-    def fitness(self, count, target):
+    def fitness(self, idx):
         distance = self.position.distance_to(TARGET)
         fitness_value = np.interp(distance, [0,WIDTH], [1,0])
         if self.target_reached:
-            speed_fitness = np.interp(count, [0, GENE_SIZE * 30], [1, 0])
+            speed_fitness = np.interp(idx, [0, GENE_SIZE * 30], [1, 0.25])
             fitness_value = 20 * speed_fitness
         elif self.stop:
             fitness_value *= 0
-        return fitness_value ** 10
+        return fitness_value ** 5
     
     def crossover(self, partner):
         child = Creature()
