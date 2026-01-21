@@ -10,22 +10,23 @@ TARGET = pygame.math.Vector2(WIDTH/2, 40)
 
 MUTATION_RATE = 0.01
 
-t = 3 # Time in seconds for each generation
+t = 5 # Time in seconds for each generation
 dt = 0.25 # Time for new gene to be activated
 
 GENE_SIZE = int(t / dt) + 1
 
-speed = 15
+acc = 1
 
 class Creature:
     def __init__(self):
-        self.genes = [pygame.math.Vector2(random.uniform(-speed, speed), random.uniform(-speed, speed)) for _ in range(GENE_SIZE)]
+        self.genes = [pygame.math.Vector2(random.uniform(-acc, acc), random.uniform(-acc, acc)) for _ in range(GENE_SIZE)]
         self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 10)  # Start at center
         self.currentVelocity = pygame.math.Vector2(0, 0)
         self.stop = False
         self.color = (0,0,0)
         self.target_reached = False
         self.target_reached_idx = GENE_SIZE
+        self.max_speed = 7
 
     def get_color(self):
         # color
@@ -63,6 +64,20 @@ class Creature:
     def mutate(self):
         for i in range(GENE_SIZE):
             if random.random() < MUTATION_RATE:
-                self.genes[i] = pygame.math.Vector2(random.uniform(-speed, speed), random.uniform(-speed, speed))
+                self.genes[i] = pygame.math.Vector2(random.uniform(-acc, acc), random.uniform(-acc, acc))
 
 
+    def move(self, gene_idx):
+        if not self.stop:
+            # 1. Acceleration comes from the gene
+            self.acceleration = self.genes[gene_idx] 
+            
+            # 2. Velocity accumulates acceleration
+            self.currentVelocity += self.acceleration 
+            
+            # 3. Limit the speed (The most important part for smoothness!)
+            if self.currentVelocity.length() > self.max_speed:
+                self.currentVelocity.scale_to_length(self.max_speed)
+                
+            # 4. Position accumulates velocity
+            self.position += self.currentVelocity

@@ -158,7 +158,7 @@ while running:
             creature.target_reached = True
 
         else:
-            creature.position += creature.genes[gene_idx]
+            creature.move(gene_idx)
         
     
 
