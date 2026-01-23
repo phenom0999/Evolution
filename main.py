@@ -1,184 +1,132 @@
 from creature import Creature, WIDTH, HEIGHT, GENE_SIZE, TARGET, dt
+from obstacle import Obstacle
 import random
 import pygame
-from obstacle import Obstacle
+import math
 
-
-# Initialize Pygame
 pygame.init()
-
-pygame.display.set_caption("Genetic Algorithm")
-
-
-populationSize = 5000
-
-population = [Creature() for _ in range(populationSize)]  # Fixed initialization
-
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-YELLOW = (200, 200, 100)
-BROWN = (150, 150, 150)
-font = pygame.font.Font(None, 30)
-
-
-bestCreature = population[0] 
-bestFitness = 0
-elitism = True
-
-count = 0
-generation = 0
-n_success_creatures = 0
-max_success_rate = 0
-
-total_fitness = 0
-mating_pool_size = populationSize * 100
-
-gene_idx = 0
-
-# Create a clock object
 clock = pygame.time.Clock()
+font = pygame.font.SysFont("Verdana", 22)
 
-FPS = 30 
+# Config
+population_size = 500
+population = [Creature() for _ in range(population_size)]
+obstacles = [
+    Obstacle(WIDTH - 200, HEIGHT/4, 400, 15),
+    Obstacle(250, HEIGHT/2, 500, 15),
+    Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 400, 15)
+]
 
-df = int(FPS * dt) # Frames for new gene to be activated
+generation = 0
+gene_idx = 0
+count = 0
+FPS = 30
+df = max(1, int(FPS * dt))
+best_creature = None
+show_only_best = False
 
+def draw_creature(surface, creature, is_best=False):
+    if len(creature.history) > 1:
+        # Draw Trail
+        points = list(creature.history)
+        if len(points) >= 2:
+            color = (0, 255, 255, 50) if not is_best else (255, 255, 0, 150)
+            pygame.draw.lines(surface, color, False, points, 1 if not is_best else 2)
 
-target_width = 60
-target_height = 40
+    # Calculate orientation
+    angle = 0
+    if creature.currentVelocity.length() > 0:
+        angle = math.atan2(creature.currentVelocity.y, creature.currentVelocity.x)
+    
+    # Draw Triangle (pointing toward velocity)
+    size = 10 if not is_best else 14
+    p1 = creature.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
+    p2 = creature.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
+    p3 = creature.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
+    
+    color = (0, 200, 255)
+    if creature.target_reached: color = (50, 255, 50)
+    if creature.stop and not creature.target_reached: color = (200, 50, 50)
+    if is_best: color = (255, 255, 0)
 
-# create two obstacles
-obs1 = Obstacle(WIDTH - 200, HEIGHT/4, 400, 20)
-obs2 = Obstacle(250, HEIGHT/2, 500, 20)
-obs3 = Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 500, 20)
-
-show_best_creature = False
-
+    pygame.draw.polygon(surface, color, [p1, p2, p3])
 
 running = True
 while running:
-
-    screen.fill(BLACK)
+    # Use a surface that supports transparency for trails
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    screen.fill((15, 15, 20)) # Deep space blue/black
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:  # Close button clicked
-            running = False
-        
-    # Check if SPACE key is held down
+        if event.type == pygame.QUIT: running = False
+    
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_SPACE]:
-        show_best_creature = True
-    else:
-        show_best_creature = False
+    show_only_best = keys[pygame.K_SPACE]
 
-    # activate next gene
     if count % df == 0:
         gene_idx += 1
 
-    # generation stops if gene_idx is out of index
+    # Generation Reset Logic
     if gene_idx >= GENE_SIZE:
-
-        # do everything here
-
-        # create mating pool
-        mating_pool = []
-
-        for creature in population:
-            fitness = creature.fitness(count)
-            total_fitness += fitness
-
-        mating_pool_rate = mating_pool_size / total_fitness
-        print(mating_pool_rate, total_fitness)
-
-        for creature in population:
-            fitness = creature.fitness(count)
-            n = [creature] * max(1, (int(fitness * mating_pool_rate)))
-            mating_pool += n
-
-            # also update the bestFitness
-            if fitness > bestFitness:
-                bestFitness = fitness
-                bestCreature = creature
-    
+        # Calculate Fitness and Selection
+        weights = [c.fitness(gene_idx) for c in population]
+        current_best_idx = weights.index(max(weights))
+        best_creature = population[current_best_idx]
         
-        new_population = []
-        if elitism and bestCreature:
-            bestCreature.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 10)
-            new_population.append(bestCreature)
-        while len(new_population) < populationSize:
-            parentA = random.choice(mating_pool)
-            parentB = random.choice(mating_pool)
-            child = parentA.crossover(parentB)
+        new_pop = []
+        # Elitism
+        elite = best_creature
+        elite.reset()
+        new_pop.append(elite)
+
+        while len(new_pop) < population_size:
+            parents = random.choices(population, weights=weights, k=2)
+            child = parents[0].crossover(parents[1])
             child.mutate()
-            new_population.append(child)
-
-        population = new_population[:populationSize]
-
-        max_success_rate = max(max_success_rate, int((n_success_creatures / populationSize) * 100)) # update max successful creature count
-
-        # reset count
-        count = 0
-        gene_idx = 0
-        n_success_creatures = 0
-        generation += 1
+            new_pop.append(child)
         
+        population = new_pop
+        gene_idx = 0
+        count = 0
+        generation += 1
         continue
 
-    # Draw target
-    rect_target = pygame.Rect(0, 0, target_width, target_height)
-    rect_target.center = TARGET  # Set center directly
+    # Draw Target with Glow
+    pygame.draw.circle(overlay, (255, 255, 0, 30), TARGET, 30 + math.sin(count*0.1)*5)
+    pygame.draw.circle(screen, (255, 200, 0), TARGET, 15)
 
-    # Draw obstacles
-    obs1.draw(screen, BROWN)
-    obs2.draw(screen, BROWN)
-    obs3.draw(screen, BROWN)
-    pygame.draw.rect(screen, YELLOW, rect_target)
+    for obs in obstacles: obs.draw(screen)
 
-    
-    for creature in population:
-        if creature.stop and not creature.target_reached:
-            creature.color = (150, 0, 0)
+    for c in population:
+        if not c.stop:
+            for obs in obstacles:
+                if obs.check_collision(c): c.stop = True
+            
+            if c.position.distance_to(TARGET) < 20:
+                c.stop = True
+                c.target_reached = True
+            
+            # Boundary checks
+            if not (0 < c.position.x < WIDTH and 0 < c.position.y < HEIGHT):
+                c.stop = True
+
+            c.move(gene_idx)
+
+        if show_only_best:
+            if c == best_creature: draw_creature(overlay, c, True)
         else:
-            creature.get_color()
+            draw_creature(overlay, c, c == best_creature)
 
-        if not show_best_creature or creature == bestCreature:
-                pygame.draw.circle(screen, creature.color, creature.position, 10)
-
-
-        # Check to see if the creature has collided with the obstacle
-        if obs1.check_collision(creature) or obs2.check_collision(creature) or obs3.check_collision(creature):
-            creature.stop = True
-        # Check to see if the creature has reached the target
-        elif (WIDTH/2 - target_width/2 <= creature.position.x <= WIDTH/2 + target_width/2 and
-    40 - target_height/2 <= creature.position.y <= 40 + target_height/2):
-            if not creature.target_reached:
-                n_success_creatures += 1
-            creature.stop = True
-            creature.target_reached = True
-
-        else:
-            creature.move(gene_idx)
-        
+    screen.blit(overlay, (0,0))
     
-
+    # UI
+    ui_color = (200, 200, 200)
+    screen.blit(font.render(f"Generation: {generation}", True, ui_color), (20, 20))
+    screen.blit(font.render(f"Gene: {gene_idx}/{GENE_SIZE}", True, ui_color), (20, 50))
+    
+    pygame.display.flip()
     count += 1
-
-    # Display Generation Count
-    gen_text = font.render(f"Gen: {generation}", True, WHITE)
-    text_rect = gen_text.get_rect(center=(50, 40))
-    screen.blit(gen_text, text_rect)  # Draw text
-
-    success_text = font.render(f"Max success rate: {max_success_rate}%", True, WHITE)
-    text_rect = gen_text.get_rect(center=(50, 80))
-    screen.blit(success_text, text_rect)  # Draw text
-    pygame.display.update()  # Update the screen
-
-
-
-    # Limit frame rate
-    clock.tick(FPS)  # This makes sure the game runs at 60 FPS
-
-
+    clock.tick(FPS)
 
 pygame.quit()

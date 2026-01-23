@@ -2,82 +2,79 @@ import pygame
 import random
 import numpy as np
 
+# Constants
 WIDTH, HEIGHT = 800, 600
-
-
-
 TARGET = pygame.math.Vector2(WIDTH/2, 40)
-
 MUTATION_RATE = 0.01
-
-t = 5 # Time in seconds for each generation
-dt = 0.25 # Time for new gene to be activated
-
+t = 5 
+dt = 0.25 
 GENE_SIZE = int(t / dt) + 1
-
-acc = 1
+acc_limit = 0.6  # Reduced slightly for smoother steering
 
 class Creature:
     def __init__(self):
-        self.genes = [pygame.math.Vector2(random.uniform(-acc, acc), random.uniform(-acc, acc)) for _ in range(GENE_SIZE)]
-        self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 10)  # Start at center
+        self.genes = [pygame.math.Vector2(random.uniform(-acc_limit, acc_limit), 
+                                         random.uniform(-acc_limit, acc_limit)) for _ in range(GENE_SIZE)]
+        self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 20)
         self.currentVelocity = pygame.math.Vector2(0, 0)
+        self.acceleration = pygame.math.Vector2(0, 0)
         self.stop = False
-        self.color = (0,0,0)
         self.target_reached = False
-        self.target_reached_idx = GENE_SIZE
-        self.max_speed = 7
+        self.color = (100, 100, 255)
+        self.max_speed = 6
+        self.history = [] # For visual trails
+        self.history_size = 5
 
-    def get_color(self):
-        # color
-        geneX = 0
-        geneY = 0
-        for gene in self.genes:
-            geneX += gene.x
-            geneY += gene.y
-                
-        green = np.interp(geneX, [-30, 30], [0,200])
-        blue = np.interp(geneY, [-30, 30], [200,0])
-        self.color = (0, green, blue, 255)
-    
-    def fitness(self, idx):
-        distance = self.position.distance_to(TARGET)
-        fitness_value = np.interp(distance, [0,WIDTH], [1,0])
+    def reset(self):
+        """Resets the creature for a new generation while keeping genes."""
+        self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 20)
+        self.currentVelocity = pygame.math.Vector2(0, 0)
+        self.acceleration = pygame.math.Vector2(0, 0)
+        self.stop = False
+        self.target_reached = False
+        self.history = []
+
+    def fitness(self, current_gene_idx):
+        dist = self.position.distance_to(TARGET)
+        # Normalize fitness between 0 and 1
+        fitness_val = np.interp(dist, [0, WIDTH], [1, 0])
+        
         if self.target_reached:
-            speed_fitness = np.interp(idx, [0, GENE_SIZE * 30], [1, 0.25])
-            fitness_value = 20 * speed_fitness
-        elif self.stop:
-            fitness_value *= 0
-        return fitness_value ** 5
-    
+            # Huge bonus for reaching target, scaled by how fast they got there
+            time_bonus = np.interp(current_gene_idx, [0, GENE_SIZE], [2, 1])
+            return (fitness_val + time_bonus) * 10
+        
+        if self.stop:
+            return fitness_val * 0.1 # Penalty for hitting walls
+            
+        return fitness_val ** 4
+
+    def move(self, gene_idx):
+        if not self.stop:
+            # Save history for trails
+            self.history.append(pygame.math.Vector2(self.position))
+            if len(self.history) > self.history_size:
+                self.history.pop(0)
+
+            # Physics engine
+            self.acceleration = self.genes[gene_idx]
+            self.currentVelocity += self.acceleration
+            
+            if self.currentVelocity.length() > self.max_speed:
+                self.currentVelocity.scale_to_length(self.max_speed)
+            
+            self.position += self.currentVelocity
+
     def crossover(self, partner):
         child = Creature()
         midpoint = random.randint(0, GENE_SIZE)
+        # Uniform Crossover for better genetic mixing
         for i in range(GENE_SIZE):
-            if i < midpoint:
-                child.genes[i] = self.genes[i]
-            else:
-                child.genes[i] = partner.genes[i]
+            child.genes[i] = self.genes[i] if random.random() > 0.5 else partner.genes[i]
         return child
-
 
     def mutate(self):
         for i in range(GENE_SIZE):
             if random.random() < MUTATION_RATE:
-                self.genes[i] = pygame.math.Vector2(random.uniform(-acc, acc), random.uniform(-acc, acc))
-
-
-    def move(self, gene_idx):
-        if not self.stop:
-            # 1. Acceleration comes from the gene
-            self.acceleration = self.genes[gene_idx] 
-            
-            # 2. Velocity accumulates acceleration
-            self.currentVelocity += self.acceleration 
-            
-            # 3. Limit the speed (The most important part for smoothness!)
-            if self.currentVelocity.length() > self.max_speed:
-                self.currentVelocity.scale_to_length(self.max_speed)
-                
-            # 4. Position accumulates velocity
-            self.position += self.currentVelocity
+                self.genes[i] = pygame.math.Vector2(random.uniform(-acc_limit, acc_limit), 
+                                                   random.uniform(-acc_limit, acc_limit))

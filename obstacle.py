@@ -1,20 +1,15 @@
 import pygame
+
 class Obstacle:
+    def __init__(self, x, y, w, h):
+        self.rect = pygame.Rect(0, 0, w, h)
+        self.rect.center = (x, y)
 
-    def __init__(self, obstacle_x, obstacle_y, obstacle_width, obstacle_height):
-        self.obstacle_width = obstacle_width
-        self.obstacle_height = obstacle_height
-        self.obstacle_x = obstacle_x
-        self.obstacle_y = obstacle_y
-        self.obstacle_position = pygame.math.Vector2(obstacle_x, obstacle_y)
-
-    def draw(self, surface, color):
-        rect_obs = pygame.Rect(0, 0, self.obstacle_width, self.obstacle_height)
-        rect_obs.center = self.obstacle_position
-        pygame.draw.rect(surface, color, rect_obs)
+    def draw(self, surface):
+        # Draw main body
+        pygame.draw.rect(surface, (40, 40, 45), self.rect)
+        # Draw minimalist border
+        pygame.draw.rect(surface, (100, 100, 110), self.rect, 2)
 
     def check_collision(self, creature):
-        if (self.obstacle_x - self.obstacle_width/2 <= creature.position.x <= self.obstacle_x + self.obstacle_width/2 and
-    self.obstacle_y - self.obstacle_height/2 <= creature.position.y <= self.obstacle_y + self.obstacle_height/2):
-            return True
-
+        return self.rect.collidepoint(creature.position.x, creature.position.y)
