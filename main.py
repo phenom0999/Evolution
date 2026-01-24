@@ -1,8 +1,9 @@
-from creature import Creature, WIDTH, HEIGHT, GENE_SIZE, TARGET, dt
+from creature import Creature, WIDTH, HEIGHT, TARGET
 from obstacle import Obstacle
 import random
 import pygame
 import math
+import numpy as np
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -21,10 +22,10 @@ obstacles = [
 generation = 0
 gene_idx = 0
 count = 0
-FPS = 30
-df = max(1, int(FPS * dt))
 best_creature = None
 show_only_best = False
+FRAMES = 500
+
 
 def draw_creature(surface, creature, is_best=False):
     if len(creature.history) > 1:
@@ -36,8 +37,8 @@ def draw_creature(surface, creature, is_best=False):
 
     # Calculate orientation
     angle = 0
-    if creature.currentVelocity.length() > 0:
-        angle = math.atan2(creature.currentVelocity.y, creature.currentVelocity.x)
+    if np.linalg.norm(creature.velocity) > 0:
+        angle = math.atan2(creature.velocity[1], creature.velocity[0])
     
     # Draw Triangle (pointing toward velocity)
     size = 10 if not is_best else 14
@@ -64,13 +65,10 @@ while running:
     keys = pygame.key.get_pressed()
     show_only_best = keys[pygame.K_SPACE]
 
-    if count % df == 0:
-        gene_idx += 1
-
     # Generation Reset Logic
-    if gene_idx >= GENE_SIZE:
+    if count >= FRAMES:
         # Calculate Fitness and Selection
-        weights = [c.fitness(gene_idx) for c in population]
+        weights = [c.fitness() + 1e-8 for c in population]
         current_best_idx = weights.index(max(weights))
         best_creature = population[current_best_idx]
         
@@ -103,15 +101,18 @@ while running:
             for obs in obstacles:
                 if obs.check_collision(c): c.stop = True
             
-            if c.position.distance_to(TARGET) < 20:
+            dx = c.position[0] - TARGET[0]
+            dy = c.position[1] - TARGET[1]
+
+            if dx*dx + dy*dy < 400:
                 c.stop = True
                 c.target_reached = True
             
             # Boundary checks
-            if not (0 < c.position.x < WIDTH and 0 < c.position.y < HEIGHT):
+            if not (0 < c.position[0] < WIDTH and 0 < c.position[1] < HEIGHT):
                 c.stop = True
 
-            c.move(gene_idx)
+            c.move()
 
         if show_only_best:
             if c == best_creature: draw_creature(overlay, c, True)
@@ -123,10 +124,9 @@ while running:
     # UI
     ui_color = (200, 200, 200)
     screen.blit(font.render(f"Generation: {generation}", True, ui_color), (20, 20))
-    screen.blit(font.render(f"Gene: {gene_idx}/{GENE_SIZE}", True, ui_color), (20, 50))
+    #screen.blit(font.render(f"Gene: {gene_idx}/{GENE_SIZE}", True, ui_color), (20, 50))
     
     pygame.display.flip()
     count += 1
-    clock.tick(FPS)
 
 pygame.quit()

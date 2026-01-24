@@ -12,4 +12,4 @@ class Obstacle:
         pygame.draw.rect(surface, (100, 100, 110), self.rect, 2)
 
     def check_collision(self, creature):
-        return self.rect.collidepoint(creature.position.x, creature.position.y)
+        return self.rect.collidepoint(creature.position[0], creature.position[1])

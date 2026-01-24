@@ -4,20 +4,28 @@ import numpy as np
 
 # Constants
 WIDTH, HEIGHT = 800, 600
-TARGET = pygame.math.Vector2(WIDTH/2, 40)
+TARGET = np.array([WIDTH/2, 40])
 MUTATION_RATE = 0.01
 t = 5 
 dt = 0.25 
-GENE_SIZE = int(t / dt) + 1
-acc_limit = 0.6  # Reduced slightly for smoother steering
+ACC_LIMIT = 0.6  # Reduced slightly for smoother steering
 
 class Creature:
-    def __init__(self):
-        self.genes = [pygame.math.Vector2(random.uniform(-acc_limit, acc_limit), 
-                                         random.uniform(-acc_limit, acc_limit)) for _ in range(GENE_SIZE)]
-        self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 20)
-        self.currentVelocity = pygame.math.Vector2(0, 0)
-        self.acceleration = pygame.math.Vector2(0, 0)
+    def __init__(self, hidden_size=4):
+
+        self.input_size = 6
+        self.hidden_size = hidden_size
+        self.output_size = 2
+
+        self.gene_size = ((self.input_size * self.hidden_size)
+                            + (self.hidden_size)
+                            + (self.hidden_size * self.output_size)
+                            + (self.output_size))
+        self.genes = np.random.rand(self.gene_size) * 0.1
+
+        self.position = np.array([WIDTH/2, HEIGHT - 20])
+        self.velocity = np.array([0, 0], dtype=np.float64)
+        self.acceleration = np.array([0, 0], dtype=np.float64)
         self.stop = False
         self.target_reached = False
         self.color = (100, 100, 255)
@@ -27,54 +35,78 @@ class Creature:
 
     def reset(self):
         """Resets the creature for a new generation while keeping genes."""
-        self.position = pygame.math.Vector2(WIDTH/2, HEIGHT - 20)
-        self.currentVelocity = pygame.math.Vector2(0, 0)
-        self.acceleration = pygame.math.Vector2(0, 0)
+        self.position = np.array([WIDTH/2, HEIGHT - 20])
+        self.velocity = np.array([0, 0], dtype=np.float64)
+        self.acceleration = np.array([0, 0], dtype=np.float64)
         self.stop = False
         self.target_reached = False
         self.history = []
 
-    def fitness(self, current_gene_idx):
-        dist = self.position.distance_to(TARGET)
+    def fitness(self):
+        dx = self.position[0] - TARGET[0]
+        dy = self.position[1] - TARGET[1]
+
+        dist = dx*dx + dy*dy
         # Normalize fitness between 0 and 1
-        fitness_val = np.interp(dist, [0, WIDTH], [1, 0])
+        fitness_val = np.interp(dist, [0, WIDTH ** 2], [1, 0])
         
         if self.target_reached:
-            # Huge bonus for reaching target, scaled by how fast they got there
-            time_bonus = np.interp(current_gene_idx, [0, GENE_SIZE], [2, 1])
+            time_bonus = 0  #TODO
             return (fitness_val + time_bonus) * 10
         
         if self.stop:
-            return fitness_val * 0.1 # Penalty for hitting walls
+            return fitness_val * 0.5 # Penalty for hitting walls
             
         return fitness_val ** 4
+    
 
-    def move(self, gene_idx):
+    
+    def brain(self):
+
+        # Separate weights and biases from genes
+        Wih, Bih, Who, Bho = np.split(self.genes, [self.input_size * self.hidden_size, 
+                                            self.input_size * self.hidden_size + self.hidden_size,
+                                            (self.input_size * self.hidden_size) + self.hidden_size + (self.hidden_size * self.output_size)])
+
+        # Prepare weight and bias matrices
+        Wih = Wih.reshape(self.input_size, self.hidden_size)
+        Bih = Bih.reshape(1,-1)
+        Who = Who.reshape(self.hidden_size, self.output_size)
+        Bho = Bho.reshape(1,-1)
+
+        # Get inputs
+        I = np.hstack((self.position, self.velocity, TARGET)).reshape(1,-1)
+        I = (I - I.mean()) / (I.std() + 1e-8)
+
+        # Feed forward
+        H = np.tanh(I @ Wih + Bih)
+        O = np.tanh(H @ Who + Bho) * ACC_LIMIT
+
+        # Return the acceleration vector
+        return np.squeeze(O)
+
+
+    def move(self):
         if not self.stop:
-            # Save history for trails
-            self.history.append(pygame.math.Vector2(self.position))
-            if len(self.history) > self.history_size:
-                self.history.pop(0)
 
             # Physics engine
-            self.acceleration = self.genes[gene_idx]
-            self.currentVelocity += self.acceleration
+            self.acceleration = self.brain()
+            self.velocity += self.acceleration
             
-            if self.currentVelocity.length() > self.max_speed:
-                self.currentVelocity.scale_to_length(self.max_speed)
+            if np.linalg.norm(self.velocity) > self.max_speed:
+                self.velocity = self.velocity * (self.max_speed / np.linalg.norm(self.velocity))
             
-            self.position += self.currentVelocity
+            self.position += self.velocity
 
     def crossover(self, partner):
         child = Creature()
-        midpoint = random.randint(0, GENE_SIZE)
         # Uniform Crossover for better genetic mixing
-        for i in range(GENE_SIZE):
+        for i in range(self.gene_size):
             child.genes[i] = self.genes[i] if random.random() > 0.5 else partner.genes[i]
         return child
 
     def mutate(self):
-        for i in range(GENE_SIZE):
+        for i in range(self.gene_size):
             if random.random() < MUTATION_RATE:
-                self.genes[i] = pygame.math.Vector2(random.uniform(-acc_limit, acc_limit), 
-                                                   random.uniform(-acc_limit, acc_limit))
+                self.genes[i] = np.random.uniform(-1, 1) * 0.1
+
