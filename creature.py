@@ -4,16 +4,16 @@ import numpy as np
 
 # Constants
 WIDTH, HEIGHT = 800, 600
-TARGET = np.array([WIDTH/2, 40])
+#TARGET = np.array([WIDTH/2, 40])
+#TARGET = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
 MUTATION_RATE = 0.01
-t = 5 
-dt = 0.25 
-ACC_LIMIT = 0.6  # Reduced slightly for smoother steering
+ACC_LIMIT = 5  # Reduced slightly for smoother steering
+
 
 class Creature:
     def __init__(self, hidden_size=4):
 
-        self.input_size = 6
+        self.input_size = 4
         self.hidden_size = hidden_size
         self.output_size = 2
 
@@ -21,15 +21,15 @@ class Creature:
                             + (self.hidden_size)
                             + (self.hidden_size * self.output_size)
                             + (self.output_size))
-        self.genes = np.random.rand(self.gene_size) * 0.1
-
+        self.genes = np.random.uniform(-1, 1, self.gene_size) * 0.1
+            
         self.position = np.array([WIDTH/2, HEIGHT - 20])
         self.velocity = np.array([0, 0], dtype=np.float64)
         self.acceleration = np.array([0, 0], dtype=np.float64)
         self.stop = False
         self.target_reached = False
         self.color = (100, 100, 255)
-        self.max_speed = 6
+        self.max_speed = 2
         self.history = [] # For visual trails
         self.history_size = 5
 
@@ -42,26 +42,21 @@ class Creature:
         self.target_reached = False
         self.history = []
 
-    def fitness(self):
-        dx = self.position[0] - TARGET[0]
-        dy = self.position[1] - TARGET[1]
-
-        dist = dx*dx + dy*dy
+    def fitness(self, count, target):
+        dist = np.linalg.norm(self.position - target)
         # Normalize fitness between 0 and 1
-        fitness_val = np.interp(dist, [0, WIDTH ** 2], [1, 0])
+        fitness_val = np.interp(dist, [0, WIDTH], [1, 0])
         
         if self.target_reached:
-            time_bonus = 0  #TODO
-            return (fitness_val + time_bonus) * 10
+            return 1.5 + (1.0 / (count + 1)) # Bonus for speed if reached
         
         if self.stop:
-            return fitness_val * 0.5 # Penalty for hitting walls
+            return fitness_val * 0.1 # Penalty for hitting walls
             
-        return fitness_val ** 4
+        return fitness_val ** 2
     
-
     
-    def brain(self):
+    def brain(self, target):
 
         # Separate weights and biases from genes
         Wih, Bih, Who, Bho = np.split(self.genes, [self.input_size * self.hidden_size, 
@@ -75,8 +70,13 @@ class Creature:
         Bho = Bho.reshape(1,-1)
 
         # Get inputs
-        I = np.hstack((self.position, self.velocity, TARGET)).reshape(1,-1)
-        I = (I - I.mean()) / (I.std() + 1e-8)
+        # Calculate relative vector to target
+        rel_x = (target[0] - self.position[0]) / WIDTH
+        rel_y = (target[1] - self.position[1]) / HEIGHT
+        vel_x = self.velocity[0] / self.max_speed
+        vel_y = self.velocity[1] / self.max_speed
+
+        I = np.array([rel_x, rel_y, vel_x, vel_y]).reshape(1, -1)
 
         # Feed forward
         H = np.tanh(I @ Wih + Bih)
@@ -86,11 +86,11 @@ class Creature:
         return np.squeeze(O)
 
 
-    def move(self):
+    def move(self, target):
         if not self.stop:
 
             # Physics engine
-            self.acceleration = self.brain()
+            self.acceleration = self.brain(target)
             self.velocity += self.acceleration
             
             if np.linalg.norm(self.velocity) > self.max_speed:
@@ -108,5 +108,6 @@ class Creature:
     def mutate(self):
         for i in range(self.gene_size):
             if random.random() < MUTATION_RATE:
-                self.genes[i] = np.random.uniform(-1, 1) * 0.1
+                # Nudge the weight rather than replacing it
+                self.genes[i] += np.random.normal(0, 1)
 

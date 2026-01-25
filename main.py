@@ -1,4 +1,4 @@
-from creature import Creature, WIDTH, HEIGHT, TARGET
+from creature import Creature, WIDTH, HEIGHT
 from obstacle import Obstacle
 import random
 import pygame
@@ -14,9 +14,9 @@ font = pygame.font.SysFont("Verdana", 22)
 population_size = 500
 population = [Creature() for _ in range(population_size)]
 obstacles = [
-    Obstacle(WIDTH - 200, HEIGHT/4, 400, 15),
-    Obstacle(250, HEIGHT/2, 500, 15),
-    Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 400, 15)
+    #Obstacle(WIDTH - 200, HEIGHT/4, 400, 15),
+    #Obstacle(250, HEIGHT/2, 500, 15),
+    #Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 400, 15)
 ]
 
 generation = 0
@@ -24,6 +24,8 @@ gene_idx = 0
 count = 0
 best_creature = None
 show_only_best = False
+target = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+
 FRAMES = 500
 
 
@@ -67,11 +69,11 @@ while running:
 
     # Generation Reset Logic
     if count >= FRAMES:
+        
         # Calculate Fitness and Selection
-        weights = [c.fitness() + 1e-8 for c in population]
+        weights = [c.fitness(count, target) + 1e-8 for c in population]
         current_best_idx = weights.index(max(weights))
         best_creature = population[current_best_idx]
-        
         new_pop = []
         # Elitism
         elite = best_creature
@@ -85,14 +87,20 @@ while running:
             new_pop.append(child)
         
         population = new_pop
+
+        # Random target position
+        target = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+
         gene_idx = 0
         count = 0
         generation += 1
+
         continue
 
+
     # Draw Target with Glow
-    pygame.draw.circle(overlay, (255, 255, 0, 30), TARGET, 30 + math.sin(count*0.1)*5)
-    pygame.draw.circle(screen, (255, 200, 0), TARGET, 15)
+    pygame.draw.circle(overlay, (255, 255, 0, 30), target, 30 + math.sin(count*0.1)*5)
+    pygame.draw.circle(screen, (255, 200, 0), target, 15)
 
     for obs in obstacles: obs.draw(screen)
 
@@ -101,8 +109,8 @@ while running:
             for obs in obstacles:
                 if obs.check_collision(c): c.stop = True
             
-            dx = c.position[0] - TARGET[0]
-            dy = c.position[1] - TARGET[1]
+            dx = c.position[0] - target[0]
+            dy = c.position[1] - target[1]
 
             if dx*dx + dy*dy < 400:
                 c.stop = True
@@ -112,7 +120,7 @@ while running:
             if not (0 < c.position[0] < WIDTH and 0 < c.position[1] < HEIGHT):
                 c.stop = True
 
-            c.move()
+            c.move(target)
 
         if show_only_best:
             if c == best_creature: draw_creature(overlay, c, True)
@@ -124,7 +132,9 @@ while running:
     # UI
     ui_color = (200, 200, 200)
     screen.blit(font.render(f"Generation: {generation}", True, ui_color), (20, 20))
-    #screen.blit(font.render(f"Gene: {gene_idx}/{GENE_SIZE}", True, ui_color), (20, 50))
+
+    success_count = len([c for c in population if c.target_reached])
+    screen.blit(font.render(f"Success rate: {success_count}/{len(population)}", True, ui_color), (20, 50))
     
     pygame.display.flip()
     count += 1
