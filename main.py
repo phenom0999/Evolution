@@ -13,11 +13,28 @@ font = pygame.font.SysFont("Verdana", 22)
 # Config
 population_size = 500
 population = [Creature() for _ in range(population_size)]
-obstacles = [
-    #Obstacle(WIDTH - 200, HEIGHT/4, 400, 15),
-    #Obstacle(250, HEIGHT/2, 500, 15),
-    #Obstacle(WIDTH - 200, 3 * HEIGHT/ 4, 400, 15)
-]
+load_brain = True
+obstacles_num = 10
+obstacles = [Obstacle  (np.random.uniform(30, WIDTH - 30),
+                        np.random.uniform(30, HEIGHT - 30),
+                        np.random.uniform(20, 50))
+                        for _ in range(obstacles_num)]
+
+# get brain if load_brain
+if load_brain:
+    saved_brain = None
+    try:
+        saved_brain = np.load("best_brain.npy")
+        print("Loaded saved brain! Evolution will resume from this checkpoint.")
+    except FileNotFoundError:
+        print("No saved brain found. Starting from scratch.")
+
+    for c in population:
+        if saved_brain is not None:
+            c.genes = saved_brain.copy() # Copy the saved genes
+            c.mutate() # Mutate immediately so they aren't all identical clones
+    
+
 
 generation = 0
 gene_idx = 0
@@ -25,6 +42,8 @@ count = 0
 best_creature = None
 show_only_best = False
 target = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+tx = 0
+ty = 100
 
 FRAMES = 500
 
@@ -55,14 +74,46 @@ def draw_creature(surface, creature, is_best=False):
 
     pygame.draw.polygon(surface, color, [p1, p2, p3])
 
+def move_target(target, tx, ty):
+    tx += 0.01
+    ty += 0.013  
+
+    vx = math.sin(tx)
+    vy = math.cos(ty)
+
+    target_velocity = np.array([vx, vy])
+    if target[0] <= 0 or target[0] >= WIDTH:
+        target_velocity[0] *= -1
+
+    if target[1] <= 0 or target[1] >= HEIGHT:
+        target_velocity[1] *= -1
+
+    target += target_velocity
+
+    # Draw Target with Glow
+    pygame.draw.circle(overlay, (255, 255, 0, 30), target, 30 + math.sin(count*0.1)*5)
+    pygame.draw.circle(screen, (255, 200, 0), target, 15)
+
+    return tx, ty
+
 running = True
 while running:
     # Use a surface that supports transparency for trails
     overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     screen.fill((15, 15, 20)) # Deep space blue/black
 
+    # Event loop
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
+
+        # NEW: Key handler
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_s:
+                if best_creature:
+                    best_creature.save_genes()
+                else:
+                    # If generation 0 and no best defined yet, save the first one or handle error
+                    population[0].save_genes()
     
     keys = pygame.key.get_pressed()
     show_only_best = keys[pygame.K_SPACE]
@@ -96,11 +147,10 @@ while running:
         generation += 1
 
         continue
+    
+    # move target
+    tx, ty = move_target(target, tx, ty)
 
-
-    # Draw Target with Glow
-    pygame.draw.circle(overlay, (255, 255, 0, 30), target, 30 + math.sin(count*0.1)*5)
-    pygame.draw.circle(screen, (255, 200, 0), target, 15)
 
     for obs in obstacles: obs.draw(screen)
 

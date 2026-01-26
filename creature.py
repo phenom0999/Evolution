@@ -6,7 +6,7 @@ import numpy as np
 WIDTH, HEIGHT = 800, 600
 #TARGET = np.array([WIDTH/2, 40])
 #TARGET = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
-MUTATION_RATE = 0.01
+MUTATION_RATE = 0.001
 ACC_LIMIT = 5  # Reduced slightly for smoother steering
 
 
@@ -111,3 +111,15 @@ class Creature:
                 # Nudge the weight rather than replacing it
                 self.genes[i] += np.random.normal(0, 1)
 
+    def save_genes(self, filename="best_brain.npy"):
+        np.save(filename, self.genes)
+        print(f"Brain saved to {filename}")
+
+    def load_genes(self, filename="best_brain.npy"):
+        try:
+            self.genes = np.load(filename)
+            print(f"Brain loaded from {filename}")
+            return True # Success
+        except FileNotFoundError:
+            print(f"No saved brain found at {filename}")
+            return False # Failure
