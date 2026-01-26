@@ -18,14 +18,16 @@ saved_brian = None
 load_brain = True
 if load_brain: saved_brain = get_brain()
 
-population_size = 500
+population_size = 100
 population = [Creature(saved_brain=saved_brain) for _ in range(population_size)]
 obstacles_num = 10
-obstacles = [Obstacle  (np.random.uniform(30, WIDTH - 30),
-                        np.random.uniform(30, HEIGHT - 30),
-                        np.random.uniform(20, 50))
+obstacles = [Obstacle  (np.random.uniform(50, WIDTH - 50),
+                        np.random.uniform(50, HEIGHT - 50),
+                        np.random.uniform(10, 50),
+                        np.random.uniform(10, 50),
+                        random=True)
                         for _ in range(obstacles_num)]
-target = Target(move=True)
+target = Target(move=False, random=False)
 
 generation = 0
 gene_idx = 0
@@ -35,6 +37,9 @@ show_only_best = False
 
 
 FRAMES = 500
+FPS = 90
+
+
 
 running = True
 while running:
@@ -59,7 +64,7 @@ while running:
     show_only_best = keys[pygame.K_SPACE]
 
     # Generation Reset Logic
-    if count >= FRAMES:
+    if count >= FRAMES or len([c for c in population if c.stop]) == population_size:
         
         # Calculate Fitness and Selection
         weights = [c.fitness(count, target) + 1e-8 for c in population]
@@ -81,6 +86,9 @@ while running:
 
         # Random target position
         target.random_position()
+
+        # Random obstacle position 
+        for obs in obstacles: obs.random_position()
 
         gene_idx = 0
         count = 0
@@ -131,5 +139,7 @@ while running:
     
     pygame.display.flip()
     count += 1
+
+    clock.tick(FPS)  
 
 pygame.quit()

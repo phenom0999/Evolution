@@ -155,3 +155,7 @@ class Creature:
         if is_best: color = (255, 255, 0)
 
         pygame.draw.polygon(surface, color, [p1, p2, p3])
+
+    def vision(self):
+        """" Ray Casting """
+        pass

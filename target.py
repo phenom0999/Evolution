@@ -4,34 +4,37 @@ import math
 from creature import WIDTH, HEIGHT
 
 class Target:
-    def __init__(self, move=False, r=15):
+    def __init__(self, move=False, random=False, r=15):
 
         self.r = r
         self.position = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
         self.tx = 0
         self.ty = 100
         self.move = move
+        self.random = random
     
     def move_target(self):
-        self.tx += 0.01
-        self.ty += 0.013  
+        if self.move:
+            self.tx += 0.01
+            self.ty += 0.013  
 
-        vx = math.sin(self.tx)
-        vy = math.cos(self.ty)
+            vx = math.sin(self.tx)
+            vy = math.cos(self.ty)
 
-        target_velocity = np.array([vx, vy])
-        if self.position[0] <= 0 or self.position[0] >= WIDTH:
-            target_velocity[0] *= -1
+            target_velocity = np.array([vx, vy])
+            if self.position[0] <= 0 or self.position[0] >= WIDTH:
+                target_velocity[0] *= -1
 
-        if self.position[1] <= 0 or self.position[1] >= HEIGHT:
-            target_velocity[1] *= -1
+            if self.position[1] <= 0 or self.position[1] >= HEIGHT:
+                target_velocity[1] *= -1
 
-        self.position += target_velocity
+            self.position += target_velocity
 
         return 
     
     def random_position(self):
-        self.position = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+        if self.random: 
+            self.position = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
         return
 
     def draw(self, overlay, screen, count):
