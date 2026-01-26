@@ -1,10 +1,12 @@
 from creature import Creature, WIDTH, HEIGHT
 from obstacle import Obstacle
 from target import Target
+from helpers import get_brain
 import random
 import pygame
 import math
 import numpy as np
+
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -12,31 +14,18 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("Verdana", 22)
 
 # Config
-population_size = 500
-population = [Creature() for _ in range(population_size)]
+saved_brian = None
 load_brain = True
+if load_brain: saved_brain = get_brain()
+
+population_size = 500
+population = [Creature(saved_brain=saved_brain) for _ in range(population_size)]
 obstacles_num = 10
 obstacles = [Obstacle  (np.random.uniform(30, WIDTH - 30),
                         np.random.uniform(30, HEIGHT - 30),
                         np.random.uniform(20, 50))
                         for _ in range(obstacles_num)]
 target = Target(move=True)
-
-# get brain if load_brain
-if load_brain:
-    saved_brain = None
-    try:
-        saved_brain = np.load("best_brain.npy")
-        print("Loaded saved brain! Evolution will resume from this checkpoint.")
-    except FileNotFoundError:
-        print("No saved brain found. Starting from scratch.")
-
-    for c in population:
-        if saved_brain is not None:
-            c.genes = saved_brain.copy() # Copy the saved genes
-            c.mutate() # Mutate immediately so they aren't all identical clones
-    
-
 
 generation = 0
 gene_idx = 0
@@ -46,34 +35,6 @@ show_only_best = False
 
 
 FRAMES = 500
-
-
-def draw_creature(surface, creature, is_best=False):
-    if len(creature.history) > 1:
-        # Draw Trail
-        points = list(creature.history)
-        if len(points) >= 2:
-            color = (0, 255, 255, 50) if not is_best else (255, 255, 0, 150)
-            pygame.draw.lines(surface, color, False, points, 1 if not is_best else 2)
-
-    # Calculate orientation
-    angle = 0
-    if np.linalg.norm(creature.velocity) > 0:
-        angle = math.atan2(creature.velocity[1], creature.velocity[0])
-    
-    # Draw Triangle (pointing toward velocity)
-    size = 10 if not is_best else 14
-    p1 = creature.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
-    p2 = creature.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
-    p3 = creature.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
-    
-    color = (0, 200, 255)
-    if creature.target_reached: color = (50, 255, 50)
-    if creature.stop and not creature.target_reached: color = (200, 50, 50)
-    if is_best: color = (255, 255, 0)
-
-    pygame.draw.polygon(surface, color, [p1, p2, p3])
-
 
 running = True
 while running:
@@ -133,7 +94,7 @@ while running:
     # draw target
     target.draw(overlay, screen, count)
 
-
+    # draw obstacles
     for obs in obstacles: obs.draw(screen)
 
     for c in population:
@@ -155,9 +116,9 @@ while running:
             c.move(target)
 
         if show_only_best:
-            if c == best_creature: draw_creature(overlay, c, True)
+            if c == best_creature: c.draw_creature(overlay, True)
         else:
-            draw_creature(overlay, c, c == best_creature)
+            c.draw_creature(overlay, c == best_creature)
 
     screen.blit(overlay, (0,0))
     

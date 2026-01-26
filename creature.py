@@ -1,6 +1,7 @@
 import pygame
 import random
 import numpy as np
+import math
 
 # Constants
 WIDTH, HEIGHT = 800, 600
@@ -11,7 +12,7 @@ ACC_LIMIT = 5  # Reduced slightly for smoother steering
 
 
 class Creature:
-    def __init__(self, hidden_size=4):
+    def __init__(self, hidden_size=4, saved_brain=None):
 
         self.input_size = 4
         self.hidden_size = hidden_size
@@ -21,7 +22,12 @@ class Creature:
                             + (self.hidden_size)
                             + (self.hidden_size * self.output_size)
                             + (self.output_size))
-        self.genes = np.random.uniform(-1, 1, self.gene_size) * 0.1
+        
+        if saved_brain is not None:
+            self.genes = saved_brain.copy() # Copy the saved genes
+            self.mutate() # Mutate immediately so they aren't all identical clones
+        else:
+            self.genes = np.random.uniform(-1, 1, self.gene_size) * 0.1
             
         self.position = np.array([WIDTH/2, HEIGHT - 20])
         self.velocity = np.array([0, 0], dtype=np.float64)
@@ -123,3 +129,29 @@ class Creature:
         except FileNotFoundError:
             print(f"No saved brain found at {filename}")
             return False # Failure
+        
+    def draw_creature(self, surface, is_best=False):
+        if len(self.history) > 1:
+            # Draw Trail
+            points = list(self.history)
+            if len(points) >= 2:
+                color = (0, 255, 255, 50) if not is_best else (255, 255, 0, 150)
+                pygame.draw.lines(surface, color, False, points, 1 if not is_best else 2)
+
+        # Calculate orientation
+        angle = 0
+        if np.linalg.norm(self.velocity) > 0:
+            angle = math.atan2(self.velocity[1], self.velocity[0])
+        
+        # Draw Triangle (pointing toward velocity)
+        size = 10 if not is_best else 14
+        p1 = self.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
+        p2 = self.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
+        p3 = self.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
+        
+        color = (0, 200, 255)
+        if self.target_reached: color = (50, 255, 50)
+        if self.stop and not self.target_reached: color = (200, 50, 50)
+        if is_best: color = (255, 255, 0)
+
+        pygame.draw.polygon(surface, color, [p1, p2, p3])
