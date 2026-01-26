@@ -43,7 +43,7 @@ class Creature:
         self.history = []
 
     def fitness(self, count, target):
-        dist = np.linalg.norm(self.position - target)
+        dist = np.linalg.norm(self.position - target.position)
         # Normalize fitness between 0 and 1
         fitness_val = np.interp(dist, [0, WIDTH], [1, 0])
         
@@ -71,8 +71,8 @@ class Creature:
 
         # Get inputs
         # Calculate relative vector to target
-        rel_x = (target[0] - self.position[0]) / WIDTH
-        rel_y = (target[1] - self.position[1]) / HEIGHT
+        rel_x = (target.position[0] - self.position[0]) / WIDTH
+        rel_y = (target.position[1] - self.position[1]) / HEIGHT
         vel_x = self.velocity[0] / self.max_speed
         vel_y = self.velocity[1] / self.max_speed
 

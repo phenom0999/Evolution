@@ -1,5 +1,6 @@
 from creature import Creature, WIDTH, HEIGHT
 from obstacle import Obstacle
+from target import Target
 import random
 import pygame
 import math
@@ -19,6 +20,7 @@ obstacles = [Obstacle  (np.random.uniform(30, WIDTH - 30),
                         np.random.uniform(30, HEIGHT - 30),
                         np.random.uniform(20, 50))
                         for _ in range(obstacles_num)]
+target = Target(move=True)
 
 # get brain if load_brain
 if load_brain:
@@ -41,9 +43,7 @@ gene_idx = 0
 count = 0
 best_creature = None
 show_only_best = False
-target = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
-tx = 0
-ty = 100
+
 
 FRAMES = 500
 
@@ -74,27 +74,6 @@ def draw_creature(surface, creature, is_best=False):
 
     pygame.draw.polygon(surface, color, [p1, p2, p3])
 
-def move_target(target, tx, ty):
-    tx += 0.01
-    ty += 0.013  
-
-    vx = math.sin(tx)
-    vy = math.cos(ty)
-
-    target_velocity = np.array([vx, vy])
-    if target[0] <= 0 or target[0] >= WIDTH:
-        target_velocity[0] *= -1
-
-    if target[1] <= 0 or target[1] >= HEIGHT:
-        target_velocity[1] *= -1
-
-    target += target_velocity
-
-    # Draw Target with Glow
-    pygame.draw.circle(overlay, (255, 255, 0, 30), target, 30 + math.sin(count*0.1)*5)
-    pygame.draw.circle(screen, (255, 200, 0), target, 15)
-
-    return tx, ty
 
 running = True
 while running:
@@ -140,7 +119,7 @@ while running:
         population = new_pop
 
         # Random target position
-        target = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+        target.random_position()
 
         gene_idx = 0
         count = 0
@@ -149,23 +128,26 @@ while running:
         continue
     
     # move target
-    tx, ty = move_target(target, tx, ty)
+    target.move_target()
+
+    # draw target
+    target.draw(overlay, screen, count)
 
 
     for obs in obstacles: obs.draw(screen)
 
     for c in population:
         if not c.stop:
+
+            # Check collision with obstacle
             for obs in obstacles:
                 if obs.check_collision(c): c.stop = True
             
-            dx = c.position[0] - target[0]
-            dy = c.position[1] - target[1]
-
-            if dx*dx + dy*dy < 400:
+            # Check collision with target
+            if target.check_collision(c):
                 c.stop = True
                 c.target_reached = True
-            
+                
             # Boundary checks
             if not (0 < c.position[0] < WIDTH and 0 < c.position[1] < HEIGHT):
                 c.stop = True
