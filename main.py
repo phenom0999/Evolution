@@ -13,21 +13,25 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("Verdana", 22)
 
+# Before the loop
+overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
 # Config
-saved_brian = None
+saved_brain = None
 load_brain = True
 if load_brain: saved_brain = get_brain()
 
 population_size = 100
-population = [Creature(saved_brain=saved_brain) for _ in range(population_size)]
-obstacles_num = 10
-obstacles = [Obstacle  (np.random.uniform(50, WIDTH - 50),
-                        np.random.uniform(50, HEIGHT - 50),
-                        np.random.uniform(10, 50),
-                        np.random.uniform(10, 50),
+population = [Creature(saved_brain=saved_brain, hidden_size=10) for _ in range(population_size)]
+obstacles_num = 15
+obstacle_size = 75
+obstacles = [Obstacle  (np.random.uniform(50, WIDTH - obstacle_size),
+                        np.random.uniform(50, HEIGHT - obstacle_size),
+                        np.random.uniform(10, obstacle_size),
+                        np.random.uniform(10, obstacle_size),
                         random=True)
                         for _ in range(obstacles_num)]
-target = Target(move=False, random=False)
+target = Target(move=False, random=True)
 
 generation = 0
 gene_idx = 0
@@ -44,7 +48,7 @@ FPS = 90
 running = True
 while running:
     # Use a surface that supports transparency for trails
-    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0,0,0,0))
     screen.fill((15, 15, 20)) # Deep space blue/black
 
     # Event loop
@@ -121,12 +125,13 @@ while running:
             if not (0 < c.position[0] < WIDTH and 0 < c.position[1] < HEIGHT):
                 c.stop = True
 
-            c.move(target)
+            c.move(target, obstacles)
 
         if show_only_best:
-            if c == best_creature: c.draw_creature(overlay, True)
+            if c == best_creature: c.shape_orientation(surface=overlay, is_best=True, draw=True)
         else:
-            c.draw_creature(overlay, c == best_creature)
+            c.shape_orientation(surface=overlay, is_best=c == best_creature, draw=True)
+            #c.vision(surface=overlay, show_FOV=True)
 
     screen.blit(overlay, (0,0))
     

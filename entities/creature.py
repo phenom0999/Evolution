@@ -2,6 +2,7 @@ import pygame
 import random
 import numpy as np
 import math
+from helpers import get_intersection
 
 # Constants
 WIDTH, HEIGHT = 800, 600
@@ -13,8 +14,8 @@ ACC_LIMIT = 5  # Reduced slightly for smoother steering
 
 class Creature:
     def __init__(self, hidden_size=4, saved_brain=None):
-
-        self.input_size = 4
+        self.num_rays = 4
+        self.input_size = self.num_rays + 4
         self.hidden_size = hidden_size
         self.output_size = 2
 
@@ -36,8 +37,8 @@ class Creature:
         self.target_reached = False
         self.color = (100, 100, 255)
         self.max_speed = 2
-        self.history = [] # For visual trails
-        self.history_size = 5
+        self.angle = 0
+        self.vision_inputs = [0] * self.num_rays
 
     def reset(self):
         """Resets the creature for a new generation while keeping genes."""
@@ -62,7 +63,7 @@ class Creature:
         return fitness_val ** 2
     
     
-    def brain(self, target):
+    def brain(self, target, obstacles):
 
         # Separate weights and biases from genes
         Wih, Bih, Who, Bho = np.split(self.genes, [self.input_size * self.hidden_size, 
@@ -82,7 +83,20 @@ class Creature:
         vel_x = self.velocity[0] / self.max_speed
         vel_y = self.velocity[1] / self.max_speed
 
-        I = np.array([rel_x, rel_y, vel_x, vel_y]).reshape(1, -1)
+        # Update Geometry BEFORE thinking
+        if np.linalg.norm(self.velocity) > 0.1:
+            self.angle = math.atan2(self.velocity[1], self.velocity[0])
+
+        # Calculate eye position relative to current position
+        eye_offset = pygame.math.Vector2(10, 0).rotate(math.degrees(self.angle))
+        self.eye = self.position + np.array([eye_offset.x, eye_offset.y])
+
+        # Get vision inputs
+        self.vision_inputs = self.ray_edge_intersection(obstacles)
+
+        # Prepare inputs
+        input_list = [rel_x, rel_y, vel_x, vel_y] + self.vision_inputs
+        I = np.array(input_list).reshape(1, -1)
 
         # Feed forward
         H = np.tanh(I @ Wih + Bih)
@@ -92,11 +106,11 @@ class Creature:
         return np.squeeze(O)
 
 
-    def move(self, target):
+    def move(self, target, obstacles):
         if not self.stop:
 
             # Physics engine
-            self.acceleration = self.brain(target)
+            self.acceleration = self.brain(target, obstacles)
             self.velocity += self.acceleration
             
             if np.linalg.norm(self.velocity) > self.max_speed:
@@ -105,7 +119,7 @@ class Creature:
             self.position += self.velocity
 
     def crossover(self, partner):
-        child = Creature()
+        child = Creature(hidden_size=self.hidden_size)
         # Uniform Crossover for better genetic mixing
         for i in range(self.gene_size):
             child.genes[i] = self.genes[i] if random.random() > 0.5 else partner.genes[i]
@@ -130,32 +144,75 @@ class Creature:
             print(f"No saved brain found at {filename}")
             return False # Failure
         
-    def draw_creature(self, surface, is_best=False):
-        if len(self.history) > 1:
-            # Draw Trail
-            points = list(self.history)
-            if len(points) >= 2:
-                color = (0, 255, 255, 50) if not is_best else (255, 255, 0, 150)
-                pygame.draw.lines(surface, color, False, points, 1 if not is_best else 2)
+    def shape_orientation(self, surface=None, is_best=False, draw=False):
 
         # Calculate orientation
-        angle = 0
+        self.angle = 0
         if np.linalg.norm(self.velocity) > 0:
-            angle = math.atan2(self.velocity[1], self.velocity[0])
+            self.angle = math.atan2(self.velocity[1], self.velocity[0])
         
         # Draw Triangle (pointing toward velocity)
         size = 10 if not is_best else 14
-        self.p1 = self.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
-        self.p2 = self.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
-        self.p3 = self.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
+        self.eye = self.position + pygame.math.Vector2(size, 0).rotate(math.degrees(self.angle))
+        self.p2 = self.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(self.angle))
+        self.p3 = self.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(self.angle))
         
         color = (0, 200, 255)
         if self.target_reached: color = (50, 255, 50)
         if self.stop and not self.target_reached: color = (200, 50, 50)
         if is_best: color = (255, 255, 0)
 
-        pygame.draw.polygon(surface, color, [self.p1, self.p2, self.p3])
+        if draw:
+            pygame.draw.polygon(surface, color, [self.eye, self.p2, self.p3])
 
-    def vision(self):
-        """" Ray Casting """
-        pass
+        return
+
+    def vision(self, surface=None, FOV=60, range=60, show_FOV=False):
+        """" Ray Casting
+         FOV in degrees, range in pixels """
+
+        num_rays = self.num_rays
+        eye = self.eye # get the position of eye
+        rays = []
+
+        # rotate the rays
+        for offset in np.linspace(-FOV/2, FOV/2, num_rays):
+            offset_rad = math.radians(offset)
+            direction = pygame.math.Vector2(1, 0).rotate_rad(self.angle + offset_rad)
+            rays.append(eye + direction * range)
+
+        if show_FOV:
+            for ray in rays:
+                pygame.draw.line(surface, (255, 255, 0), eye, ray)
+
+        return rays
+    
+    def ray_edge_intersection(self, obstacles):
+
+        ray_ends = self.vision()
+        self.vision_inputs = []
+
+        for ray_end in ray_ends:
+            closest_dist = 1.0 # Default: 1.0 means "Max Distance / Saw Nothing"
+            
+            # Check THIS ray against EVERY wall of EVERY obstacle
+            for obs in obstacles:
+                edges = obs.get_edges() # Get the 4 walls
+                for edge in edges:
+                    wall_start, wall_end = edge[0], edge[1]
+                    
+                    _, dist_fraction = get_intersection(
+                        self.eye, ray_end, wall_start, wall_end
+                    )
+                    
+                    if dist_fraction is not None:
+                        # We want the CLOSEST hit for this specific ray
+                        if dist_fraction < closest_dist:
+                            closest_dist = dist_fraction
+            
+            # Invert so 1.0 = Wall is touching me, 0.0 = No wall seen
+            self.vision_inputs.append(1.0 - closest_dist)
+
+        return self.vision_inputs
+
+            
