@@ -145,16 +145,16 @@ class Creature:
         
         # Draw Triangle (pointing toward velocity)
         size = 10 if not is_best else 14
-        p1 = self.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
-        p2 = self.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
-        p3 = self.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
+        self.p1 = self.position + pygame.math.Vector2(size, 0).rotate(math.degrees(angle))
+        self.p2 = self.position + pygame.math.Vector2(-size/2, -size/2).rotate(math.degrees(angle))
+        self.p3 = self.position + pygame.math.Vector2(-size/2, size/2).rotate(math.degrees(angle))
         
         color = (0, 200, 255)
         if self.target_reached: color = (50, 255, 50)
         if self.stop and not self.target_reached: color = (200, 50, 50)
         if is_best: color = (255, 255, 0)
 
-        pygame.draw.polygon(surface, color, [p1, p2, p3])
+        pygame.draw.polygon(surface, color, [self.p1, self.p2, self.p3])
 
     def vision(self):
         """" Ray Casting """

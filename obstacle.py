@@ -28,5 +28,24 @@ class Obstacle:
             self.w = np.random.uniform(10, 50)
             self.h = np.random.uniform(10, 50)
         return
+    
+    def get_edges(self):
+
+        # get corners
+        c1 = np.array([self.x - (self.w/2), self.y - (self.h/2)])
+        c2 = np.array([self.x - (self.w/2), self.y + (self.h/2)])
+        c3 = np.array([self.x + (self.w/2), self.y + (self.h/2)])
+        c4 = np.array([self.x + (self.w/2), self.y - (self.h/2)])
+
+        # get edges
+        e1 = np.array([c1, c2])
+        e2 = np.array([c2, c3])
+        e3 = np.array([c3, c4])
+        e4 = np.array([c4, c1])
+        
+        return [e1, e2, e3, e4]
+
+        
+
 
     
