@@ -1,13 +1,12 @@
 import pygame
 import numpy as np
 import math
-from creature import WIDTH, HEIGHT
+import settings as s # Changed from 'from creature import WIDTH, HEIGHT'
 
 class Target:
     def __init__(self, move=False, random=False, r=15):
-
         self.r = r
-        self.position = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
+        self.position = np.array([np.random.uniform(30, s.WIDTH - 30), np.random.uniform(30, s.HEIGHT - 30)])
         self.tx = 0
         self.ty = 100
         self.move = move
@@ -22,33 +21,28 @@ class Target:
             vy = math.cos(self.ty)
 
             target_velocity = np.array([vx, vy])
-            if self.position[0] <= 0 or self.position[0] >= WIDTH:
+            
+            # Boundary checks using settings
+            if self.position[0] <= 0 or self.position[0] >= s.WIDTH:
                 target_velocity[0] *= -1
 
-            if self.position[1] <= 0 or self.position[1] >= HEIGHT:
+            if self.position[1] <= 0 or self.position[1] >= s.HEIGHT:
                 target_velocity[1] *= -1
 
             self.position += target_velocity
 
-        return 
-    
     def random_position(self):
         if self.random: 
-            self.position = np.array([np.random.uniform(30, WIDTH - 30), np.random.uniform(30, HEIGHT - 30)])
-        return
+            self.position = np.array([np.random.uniform(30, s.WIDTH - 30), np.random.uniform(30, s.HEIGHT - 30)])
 
-    def draw(self, overlay, screen, count):
-        # Draw Target with Glow
-        pygame.draw.circle(overlay, (255, 255, 0, 30), self.position, 30 + math.sin(count *0.1)*5)
-        pygame.draw.circle(screen, (255, 200, 0), self.position, self.r)
+    def draw(self, surface, count=0):
+        # Draw Target
+        # Optional: Add a simple glow effect using alpha surface if desired, 
+        # but standard circle is fine for now.
+        pygame.draw.circle(surface, s.COLOR_TARGET, self.position.astype(int), self.r)
 
     def check_collision(self, creature):
-        # Calculate distance between circle center and creature
         dx = self.position[0] - creature.position[0]
         dy = self.position[1] - creature.position[1]
-        
-        # Check squared distance (faster than using sqrt)
         distance_sq = dx*dx + dy*dy
-        
-        # Collision if distance is less than radius
         return distance_sq < (self.r * self.r)

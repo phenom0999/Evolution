@@ -1,5 +1,5 @@
 import numpy as np
-from numba import jit # Import Numba
+from numba import jit
 
 def get_brain():
     saved_brain = None
@@ -8,14 +8,13 @@ def get_brain():
         print("Loaded saved brain! Evolution will resume from this checkpoint.")
     except FileNotFoundError:
         print("No saved brain found. Starting from scratch.")
-
     return saved_brain
 
-# Add the @jit decorator
-# nopython=True ensures it compiles to pure machine code
-@jit(nopython=True) 
+@jit(nopython=True)
 def get_intersection(ray_start, ray_end, wall_start, wall_end):
-    x1, y1 = ray_start[0], ray_start[1] # Unpack manually for Numba safety
+    # This function is mathematically pure and doesn't depend on your game settings,
+    # so it can stay exactly as it was!
+    x1, y1 = ray_start[0], ray_start[1]
     x2, y2 = ray_end[0], ray_end[1]
     x3, y3 = wall_start[0], wall_start[1]
     x4, y4 = wall_end[0], wall_end[1]
@@ -29,12 +28,27 @@ def get_intersection(ray_start, ray_end, wall_start, wall_end):
     ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom
 
     if 0 <= ua <= 1 and 0 <= ub <= 1:
-        # Re-pack into array for return
-        # return np.array([x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)]), ua
-        
-        # Optimization: We only actually need 'ua' (distance fraction) 
-        # for vision inputs. You can skip calculating the hit point 
-        # if you aren't drawing the red dots where rays hit walls.
         return np.empty(2), ua 
 
     return None, None
+
+# --- Drawing Helper ---
+def draw_creature(surface, creature, is_best=False):
+    """Handles the visual representation of a creature."""
+    color = s.COLOR_CREATURE
+    if creature.target_reached: color = (50, 255, 50)
+    elif creature.stop: color = (200, 50, 50)
+    if is_best: color = s.COLOR_CREATURE_BEST
+
+    # Rotate a triangle
+    # (Simple trigonometry to draw a triangle pointing in velocity direction)
+    angle = creature.angle
+    center = pygame.math.Vector2(creature.position[0], creature.position[1])
+    
+    # Points of the triangle
+    size = 12 if is_best else 8
+    p1 = center + pygame.math.Vector2(size, 0).rotate_rad(angle)
+    p2 = center + pygame.math.Vector2(-size/2, -size/2).rotate_rad(angle)
+    p3 = center + pygame.math.Vector2(-size/2, size/2).rotate_rad(angle)
+    
+    pygame.draw.polygon(surface, color, [p1, p2, p3])
