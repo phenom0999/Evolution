@@ -36,7 +36,7 @@ def main():
     font = pygame.font.SysFont("Verdana", 18)
 
     # Setup
-    saved_genes = get_brain() # Ensure helpers.py is updated to use exception handling safely
+    saved_genes = get_brain("new_brain.npy") # Ensure helpers.py is updated to use exception handling safely
     pop = Population(saved_brain=saved_genes)
     
     # Init Environment
@@ -53,7 +53,7 @@ def main():
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s and pop.best_creature:
-                    np.save("best_brain.npy", pop.best_creature.genes)
+                    np.save("saved_brains/best_brain.npy", pop.best_creature.genes)
                     print("Brain Saved.")
         
         # show only best when space is pressed
