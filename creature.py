@@ -1,14 +1,13 @@
 import numpy as np
 import math
 import random
-from helpers import get_intersection
+from helpers import get_intersection, get_edge_position
 import settings as s 
 
 class Creature:
     def __init__(self, saved_brain=None):
         # 1. Properties
-        self.position = np.array([np.random.uniform(20, s.WIDTH - 20), 
-                                  np.random.uniform(20, s.HEIGHT - 20)])
+        self.position = get_edge_position()
         self.velocity = np.zeros(2)
         self.acceleration = np.zeros(2)
         self.angle = 0

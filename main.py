@@ -41,7 +41,7 @@ def main():
     
     # Init Environment
     obstacles = [Obstacle(random=True) for _ in range(15)] # Update Obstacle to use kwargs if preferred
-    target = Target(move=True, random=True)
+    target = Target(move=True, random=False)
 
     frame_count = 0
     running = True
@@ -73,7 +73,7 @@ def main():
             pop.evaluate(target)
             
             # Reset Environment
-            target.random_position()
+            target.reset()
             for obs in obstacles: obs.random_position()
             frame_count = 0
 

@@ -6,7 +6,7 @@ import settings as s # Changed from 'from creature import WIDTH, HEIGHT'
 class Target:
     def __init__(self, move=False, random=False, r=15):
         self.r = r
-        self.position = np.array([np.random.uniform(30, s.WIDTH - 30), np.random.uniform(30, s.HEIGHT - 30)])
+        self.position = np.array([s.WIDTH/2, s.HEIGHT/2])
         self.tx = 0
         self.ty = 100
         self.move = move
@@ -31,9 +31,12 @@ class Target:
 
             self.position += target_velocity
 
-    def random_position(self):
+    def reset(self):
         if self.random: 
             self.position = np.array([np.random.uniform(30, s.WIDTH - 30), np.random.uniform(30, s.HEIGHT - 30)])
+        else:
+            self.position = np.array([s.WIDTH/2, s.HEIGHT/2])
+
 
     def draw(self, surface, count=0):
         # Draw Target

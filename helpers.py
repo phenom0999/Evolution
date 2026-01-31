@@ -1,14 +1,30 @@
 import numpy as np
 from numba import jit
+import settings as s
 
-def get_brain():
+def get_brain(file_name="best_brain.npy"):
     saved_brain = None
     try:
-        saved_brain = np.load("best_brain.npy")
+        saved_brain = np.load(f"saved_brains/{file_name}")
         print("Loaded saved brain! Evolution will resume from this checkpoint.")
     except FileNotFoundError:
         print("No saved brain found. Starting from scratch.")
     return saved_brain
+
+def get_edge_position():
+    r1 = np.random.uniform(0,1)
+    r2 = np.random.uniform(0,1)
+    if r1 < 0.5:
+        if r2 < 0.5:
+            return np.array([20, np.random.uniform(20, s.HEIGHT - 20)])
+        else:
+            return np.array([s.WIDTH - 20, np.random.uniform(20, s.HEIGHT - 20)])
+    else:
+        if r2 < 0.5:
+            return np.array([np.random.uniform(20, s.WIDTH - 20), 20])
+        else:
+            return np.array([np.random.uniform(20, s.WIDTH - 20), s.HEIGHT - 20])
+
 
 @jit(nopython=True)
 def get_intersection(ray_start, ray_end, wall_start, wall_end):
@@ -31,24 +47,3 @@ def get_intersection(ray_start, ray_end, wall_start, wall_end):
         return np.empty(2), ua 
 
     return None, None
-
-# --- Drawing Helper ---
-def draw_creature(surface, creature, is_best=False):
-    """Handles the visual representation of a creature."""
-    color = s.COLOR_CREATURE
-    if creature.target_reached: color = (50, 255, 50)
-    elif creature.stop: color = (200, 50, 50)
-    if is_best: color = s.COLOR_CREATURE_BEST
-
-    # Rotate a triangle
-    # (Simple trigonometry to draw a triangle pointing in velocity direction)
-    angle = creature.angle
-    center = pygame.math.Vector2(creature.position[0], creature.position[1])
-    
-    # Points of the triangle
-    size = 12 if is_best else 8
-    p1 = center + pygame.math.Vector2(size, 0).rotate_rad(angle)
-    p2 = center + pygame.math.Vector2(-size/2, -size/2).rotate_rad(angle)
-    p3 = center + pygame.math.Vector2(-size/2, size/2).rotate_rad(angle)
-    
-    pygame.draw.polygon(surface, color, [p1, p2, p3])
