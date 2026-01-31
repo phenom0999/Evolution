@@ -2,9 +2,8 @@
 
 A visual simulation demonstrating evolution through genetic algorithms and neural networks, where creatures learn to navigate obstacles and reach a target through natural selection over multiple generations.
 
-![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)
-![Pygame](https://img.shields.io/badge/Pygame-2.5.0+-green.svg)
-![NumPy](https://img.shields.io/badge/NumPy-Latest-orange.svg)
+![Simulaition Demo](images/gif1.gif)
+
 
 ## Overview
 
