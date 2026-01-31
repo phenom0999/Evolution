@@ -6,20 +6,20 @@ A visual simulation demonstrating evolution through genetic algorithms and neura
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.0+-green.svg)
 ![NumPy](https://img.shields.io/badge/NumPy-Latest-orange.svg)
 
-## 🎯 Overview
+## Overview
 
-This project simulates a population of AI-controlled creatures that evolve navigation strategies using neural networks and genetic algorithms. Each creature has a "brain" (neural network) that processes visual input from raycasting sensors and outputs movement commands. Through evolutionary pressure, creatures develop increasingly sophisticated behaviors to reach targets while avoiding obstacles.
+This project simulates a population of AI-controlled creatures that evolve navigation strategies using neural networks and genetic algorithms. Each creature has a "brain" (neural network) that processes visual input from raycasting sensors and outputs acceleration. Through evolutionary pressure, creatures develop increasingly sophisticated behaviors to reach targets while avoiding obstacles.
 
 ### Key Features
 
-- **Neural Network Brains**: Each creature has a feedforward neural network with configurable architecture
+- **Neural Network Brains**: Each creature has a 3-layer feedforward neural network
 - **Vision System**: Raycasting-based vision with adjustable field of view and range
 - **Genetic Evolution**: Fitness-based selection, crossover, and mutation
 - **Real-time Visualization**: Watch evolution happen in real-time with Pygame
 - **Checkpointing**: Save and load the best-performing neural networks
 - **Customizable Parameters**: Easily adjust population size, mutation rates, network architecture, and more
 
-## 🧬 How It Works
+## How It Works
 
 ### Neural Network Architecture
 
@@ -56,7 +56,7 @@ Creatures perceive their environment through raycasting:
 - Closer obstacles = stronger signal (1.0 = very close, 0.0 = far)
 - Vision data feeds directly into neural network
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -83,7 +83,7 @@ python main.py
 
 The simulation will start with a random population. Watch as creatures evolve better navigation strategies over generations!
 
-## 🎮 Controls
+## Controls
 
 | Key | Action |
 |-----|--------|
@@ -91,7 +91,7 @@ The simulation will start with a random population. Watch as creatures evolve be
 | **S** | Save the current best brain to `best_brain.npy` |
 | **Close Window** | Exit simulation |
 
-## ⚙️ Configuration
+## Configuration
 
 All parameters can be adjusted in `settings.py`:
 
@@ -129,7 +129,7 @@ COLOR_OBSTACLE = (40, 40, 45)         # Obstacles
 COLOR_TARGET = (255, 200, 0)          # Target
 ```
 
-## 📊 Evolution Dynamics
+## Evolution Dynamics
 
 ### Fitness Function
 
@@ -150,9 +150,9 @@ else:
 - **Generations 1-10**: Random wandering, rare successes
 - **Generations 10-30**: Movement toward target emerges
 - **Generations 30-100**: Obstacle avoidance develops
-- **Generations 100+**: Optimized pathfinding, high success rates
+- **Generations 100+**: Optimized pathfinding, high success rates (85%+)
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 neural-evolution-sim/
@@ -167,7 +167,7 @@ neural-evolution-sim/
 └── README.md           # This file
 ```
 
-## 🔬 Advanced Usage
+## Advanced Usage
 
 ### Loading a Saved Brain
 
@@ -184,7 +184,7 @@ python main.py
 Press **S** while the simulation is running to save the current best brain:
 
 ```python
-# Saves to: best_brain.npy in the current directory
+# Saves to: `saved_brains/best_brain.npy`
 ```
 
 ### Customizing the Environment
@@ -202,40 +202,16 @@ target = Target(move=True, random=False)
 target = Target(move=False, random=True)
 ```
 
-## 🎨 Visual Indicators
+## Visual Indicators
 
 | Color | Meaning |
 |-------|---------|
-| Blue | Active creature |
+| Purple | Active creature |
 | Green | Reached target |
 | Red | Collided with obstacle or boundary |
 | Yellow | Best creature in current generation |
 
-## 🧪 Experiments to Try
-
-1. **Increase Vision Rays**: Set `NUM_RAYS = 8` for more detailed perception
-2. **Larger Networks**: Increase `HIDDEN_SIZE = 20` for more complex behaviors
-3. **Higher Mutation**: Try `MUTATION_RATE = 0.01` for faster but less stable evolution
-4. **Sparse Population**: Reduce `POPULATION_SIZE = 50` to see individual strategies
-5. **Moving Target**: Set `Target(move=True)` to evolve dynamic tracking
-6. **Obstacle Maze**: Increase obstacle count to 30+ for complex navigation
-
-## 🐛 Troubleshooting
-
-**Issue**: Creatures don't improve over generations
-- **Solution**: Increase `GENERATION_FRAMES` to give more time for fitness evaluation
-- **Solution**: Decrease `MUTATION_RATE` if evolution is too chaotic
-
-**Issue**: All creatures die immediately
-- **Solution**: Check that `ACC_LIMIT` and `MAX_SPEED` are reasonable
-- **Solution**: Reduce obstacle count or size
-
-**Issue**: Simulation runs slowly
-- **Solution**: Decrease `POPULATION_SIZE`
-- **Solution**: Reduce `NUM_RAYS` or `VIEW_RANGE`
-- **Solution**: Lower `FPS` in settings
-
-## 📚 Technical Details
+## Technical Details
 
 ### Dependencies
 
@@ -264,7 +240,7 @@ Uses line-segment intersection to detect obstacles:
 3. Return fraction of ray length to closest intersection
 4. Numba JIT compilation for real-time performance
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Some ideas:
 
@@ -274,14 +250,6 @@ Contributions are welcome! Some ideas:
 - Performance optimizations
 - Additional creature behaviors or sensors
 
-## 📄 License
+## License
 
 This project is open source and available under the MIT License.
-
-## 🙏 Acknowledgments
-
-Inspired by evolutionary computation research and genetic algorithm visualizations. Built with Python, Pygame, NumPy, and Numba.
-
----
-
-**Made with 🧬 and 🤖**
