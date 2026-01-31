@@ -6,6 +6,8 @@ A visual simulation demonstrating evolution through genetic algorithms and neura
 <img src="images/gif.gif" width="600" height="500" alt="Simulation Demo" />
 </div>
 
+*You can find the evolution till 150 generation in the following video: [https://www.youtube.com/@phenom0990/](https://www.youtube.com/watch?v=yxNfTh9XNWg)*
+
 ## Overview
 
 This project simulates a population of AI-controlled creatures that evolve navigation strategies using neural networks and genetic algorithms. Each creature has a "brain" (neural network) that processes visual input from raycasting sensors and outputs acceleration. Through evolutionary pressure, creatures develop increasingly sophisticated behaviors to reach targets while avoiding obstacles.
