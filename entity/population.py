@@ -66,3 +66,6 @@ class Population:
             
         self.creatures = new_creatures
         self.generation += 1
+
+    def start_generation_from(self, start_gen):
+        self.generation = start_gen

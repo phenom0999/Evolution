@@ -1,8 +1,9 @@
 import numpy as np
 from numba import jit
 import settings as s
+import os
 
-def get_brain(file_name="best_brain.npy"):
+def get_brain(file_name):
     saved_brain = None
     try:
         saved_brain = np.load(f"saved_brains/{file_name}")
@@ -28,8 +29,6 @@ def get_edge_position():
 
 @jit(nopython=True)
 def get_intersection(ray_start, ray_end, wall_start, wall_end):
-    # This function is mathematically pure and doesn't depend on your game settings,
-    # so it can stay exactly as it was!
     x1, y1 = ray_start[0], ray_start[1]
     x2, y2 = ray_end[0], ray_end[1]
     x3, y3 = wall_start[0], wall_start[1]
@@ -47,3 +46,14 @@ def get_intersection(ray_start, ray_end, wall_start, wall_end):
         return np.empty(2), ua 
 
     return None, None
+
+def count_files_os(directory_path):
+    """Counts the number of files (excluding directories) in a given directory."""
+    if not os.path.isdir(directory_path):
+        print(f"Error: {directory_path} is not a valid directory.")
+        return 0
+    
+    # List all entries and filter for files
+    file_count = len([name for name in os.listdir(directory_path) 
+                      if os.path.isfile(os.path.join(directory_path, name))])
+    return file_count

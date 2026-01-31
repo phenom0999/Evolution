@@ -5,14 +5,14 @@ HEIGHT = 600
 FPS = 90
 
 # Genetic Algorithm Settings
-POPULATION_SIZE = 100
+POPULATION_SIZE = 200
 MUTATION_RATE = 0.001
 GENERATION_FRAMES = 500  # How long a generation lasts
 ELITISM = True           # Keep the best creature?
 
 # Creature Settings
-ACC_LIMIT = 5
-MAX_SPEED = 2
+ACC_LIMIT = 3
+MAX_SPEED = 3
 FOV = 60
 VIEW_RANGE = 60
 NUM_RAYS = 4

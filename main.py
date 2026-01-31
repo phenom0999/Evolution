@@ -1,7 +1,7 @@
 import pygame
 import settings as s
-from entity import Population, Obstacle, Target
-from helpers import get_brain
+from entity import Population, Obstacle, Target, Creature
+from helpers import get_brain, count_files_os
 import numpy as np
 
 # --- Drawing Helper ---
@@ -34,8 +34,10 @@ def main():
     font = pygame.font.SysFont("Verdana", 18)
 
     # Setup
-    saved_genes = get_brain("new_brain.npy") # Ensure helpers.py is updated to use exception handling safely
+    brain_file = "brain_1_1000_8.npy"
+    saved_genes = get_brain(brain_file)
     pop = Population(saved_brain=saved_genes)
+    pop.start_generation_from(int(brain_file.split("_")[2]))
     
     # Init Environment
     obstacles = [Obstacle(random=True) for _ in range(15)] # Update Obstacle to use kwargs if preferred
@@ -51,7 +53,9 @@ def main():
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s and pop.best_creature:
-                    np.save("saved_brains/best_brain.npy", pop.best_creature.genes)
+                    directory_to_check = "saved_brains"
+                    file_count = count_files_os(directory_to_check)
+                    np.save(f"saved_brains/brain_{file_count}_{pop.generation}_{Creature().input_size}.npy", pop.best_creature.genes)
                     print("Brain Saved.")
         
         # show only best when space is pressed
@@ -95,7 +99,7 @@ def main():
 
         # UI
         success_num = len([c for c in pop.creatures if c.target_reached])
-        info = font.render(f"Gen: {pop.generation} | Success Rate: {success_num}/{s.POPULATION_SIZE}", True, (200, 200, 200))
+        info = font.render(f"Gen: {pop.generation} | Success Rate: {success_num * 100/s.POPULATION_SIZE}%", True, (200, 200, 200))
         screen.blit(info, (10, 10))
 
         pygame.display.flip()
