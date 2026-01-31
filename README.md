@@ -2,7 +2,7 @@
 
 A visual simulation demonstrating evolution through genetic algorithms and neural networks, where creatures learn to navigate obstacles and reach a target through natural selection over multiple generations.
 
-<img src="images/gif1.gif" width="250" height="250" alt="Simulation Demo" />
+<img src="images/gif1.gif" width="350" height="400" alt="Simulation Demo" />
 
 ## Overview
 
