@@ -173,10 +173,12 @@ neural-evolution-sim/
 
 ### Loading a Saved Brain
 
-Place a saved neural network in `saved_brains/best_brain.npy`:
+1. Place a saved neural network in `saved_brains` directory
+2. Use the file name as `brain_file` in `main.py` 
 
 ```python
-# The simulation will automatically detect and load it
+brain_file = "brain_1_100_8.npy" 
+saved_genes = get_brain(brain_file)
 python main.py
 # Console: "Loaded saved brain! Evolution will resume from this checkpoint."
 ```
@@ -186,7 +188,8 @@ python main.py
 Press **S** while the simulation is running to save the current best brain:
 
 ```python
-# Saves to: `saved_brains/best_brain.npy`
+# Saves to: `saved_brains/brain_{serial_number}_{number_of_generations}_{number_of_inputs}.npy`
+# For example: `saved_brains/brain_1_100_8.npy`
 ```
 
 ### Customizing the Environment
