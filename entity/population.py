@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import settings as s
-from creature import Creature
+from entity.creature import Creature
 
 class Population:
     def __init__(self, saved_brain=None):

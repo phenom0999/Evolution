@@ -1,8 +1,6 @@
 import pygame
 import settings as s
-from population import Population
-from obstacle import Obstacle
-from target import Target
+from entity import Population, Obstacle, Target
 from helpers import get_brain
 import numpy as np
 
