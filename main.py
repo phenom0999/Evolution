@@ -34,13 +34,13 @@ def main():
     font = pygame.font.SysFont("Verdana", 18)
 
     # Setup
-    brain_file = None 
+    brain_file = "brain_4_151_8.npy" 
     saved_genes = get_brain(brain_file)
     pop = Population(saved_brain=saved_genes)
     if brain_file: pop.start_generation_from(int(brain_file.split("_")[2]))
     
     # Init Environment
-    obstacles = [Obstacle(random=True) for _ in range(15)] # Update Obstacle to use kwargs if preferred
+    obstacles = [Obstacle(random=True) for _ in range(0)]
     target = Target(move=True, random=False)
 
     frame_count = 0
